@@ -6,4 +6,4 @@ Get the pyglet package
 Go to releases to download the most recent release.
 In your $HOME folder create a Library.uud file. Each line of this file is a steam library directory.
 Then
-`python3 PyrotonWineManage`
+`python3 pyrotonwinemanager.py`
