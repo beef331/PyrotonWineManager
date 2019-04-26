@@ -3,6 +3,7 @@ import os
 import urllib.request
 import json
 import subprocess
+import time
 
 
 from pyglet.window import key
@@ -22,6 +23,7 @@ images = []
 baseDir = os.environ['HOME'] + "/.config/PyrotonWineManager/"
 configPath = baseDir + ".config"
 dllPath = baseDir + ".dlls"
+cachedGames = baseDir + ".cached"
 if not os.path.exists(baseDir):
     os.makedirs(baseDir)
 if(os.path.isfile(os.environ['HOME'] + "/Library.uud")):
@@ -32,9 +34,7 @@ else:
 
 gameJson = json.load(urllib.request.urlopen("https://api.steampowered.com/ISteamApps/GetAppList/v1/"))
 gameJson = gameJson['applist']['apps']['app']
-
 window = pyglet.window.Window()
-
 if(os.path.isfile(configPath)):
 	with open(configPath) as configFile:
 		winetricksVer = int(configFile.readline())
@@ -57,7 +57,6 @@ if(not os.path.isfile(dllPath) or currentWineTricksVer != winetricksVer):
 				newString = dlls[x].split(' ')[0]
 				dlls[x] = newString[2:]
 			dllFile.write(dlls[x] + "\n")
-	
 else:
 	dlls =[]
 	with open(dllPath) as f:
@@ -82,24 +81,27 @@ def GetGameName(id):
 	for val in gameJson:
 		if(val['appid'] == id):
 			return val['name']
-		
 
 #Get steam paths and images from pfx names
 for path in steamPaths:
 	path = path.replace("\n","")
 	for subDir in os.listdir(path + "/steamapps/compatdata"):
 		if(subDir != "pfx"):
-			gamePaths.append(path + "/steamapps/compatdata/" + subDir)
-			name = GetGameName(int(subDir))
-			names.append(name)
-			if((baseDir + subDir + ".jpg") not in os.listdir(baseDir)):
+			if(path + "/steamapps/compatdata/" + subDir not in gamePaths):
+				gamePaths.append(path + "/steamapps/compatdata/" + subDir)
+				name = GetGameName(int(subDir))
+				names.append(name)
+			imagePath = baseDir + subDir + ".jpg"
+			if(subDir + ".jpg" not in os.listdir(baseDir)):
 				imageBytes = urllib.request.urlopen("https://steamcdn-a.akamaihd.net/steam/apps/" + subDir + "/header.jpg").read()
 				images.append(BytesIO(imageBytes))
-				imageStore = open(baseDir + subDir+".jpg",'bw+')
+				imageStore = open(imagePath,'bw+')
 				imageStore.write(imageBytes)
+				imageStore.close()
 			else:
-				image = open(basdir + subDir+".jpg",'br+')
+				image = open(imagePath,'br+')
 				images.append(BytesIO(image.read()))
+				image.close()
 
 def GetImage():
 	global image
