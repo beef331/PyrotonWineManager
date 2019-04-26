@@ -1,5 +1,6 @@
 # PyrotonWineManager
 Proton Wine Manager for managing proton wine prefixes, now with 100% more snakes!
+![](promo.gif)
 # How To Use
 1. Get winetricks.
 2. Get the pyglet package
