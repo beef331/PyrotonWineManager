@@ -9,3 +9,9 @@ Proton Wine Manager for managing proton wine prefixes, now with 100% more snakes
 such as `/media/$USER/SteamLibrary`
 5. Then
 `python3 pyrotonwinemanager.py`
+
+Left click and Enter Selects current option.
+
+Scrollwheel, Up, and Down scrolls menus.
+
+Right Click,Left,Right, and Backspace go to prior menu.
