@@ -19,3 +19,5 @@ Left click and Enter Selects current option.
 Scrollwheel, Up, and Down scrolls menus.
 
 Right Click,Left,Right, and Backspace go to prior menu.
+
+F12 Changes between tile and text mode.
