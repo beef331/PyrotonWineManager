@@ -243,13 +243,14 @@ def on_key_press(symbol, modifiers):
 def SetCurrentPage():
 	global currentPage
 	if(Menus(currentMenu) == Menus.GameSelect):
-		totalPages = math.ceil(len(gamePaths)/labelsToDraw)
 		if(viewMode == ViewMode.Text):
+			totalPages = math.ceil(len(gamePaths)/labelsToDraw)
 			if(selectedGame == (currentPage * labelsToDraw + len(gamePaths)-1) % len(gamePaths)):
 					currentPage = (currentPage - 1 + totalPages) % totalPages
 			elif(selectedGame == ((currentPage + 1) * labelsToDraw + len(gamePaths)) % len(gamePaths)):
 					currentPage = (currentPage + 1 + totalPages) % totalPages
 		if(viewMode == ViewMode.Tile):
+			totalPages = math.ceil(len(gamePaths)/imagesToDraw)
 			if(selectedGame == (currentPage * imagesToDraw + len(gamePaths)-1) % len(gamePaths)):
 					currentPage = (currentPage - 1 + imagesToDraw) % totalPages
 			elif(selectedGame == ((currentPage + 1) * imagesToDraw + len(gamePaths)) % len(gamePaths)):
@@ -298,6 +299,8 @@ def on_draw():
 					tile.set_position(xOffset * (tile.width + 10) + 10,yPos)
 					if(MouseOverImage(tile) and mouseEnabled):
 						selectedGame = index
+						SetCurrentPage()
+						GetImage()
 					if(selectedGame != index):
 						tile.opacity = 50
 					tile.draw()
