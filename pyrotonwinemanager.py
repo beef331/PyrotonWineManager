@@ -30,21 +30,28 @@ class ViewMode(Enum):
 #Global Variables
 labelsToDraw = 8
 imagesToDraw = 16
+#Selection
 selectedGame = 0
-selectedOption = 0
-selectionColor = (122,192,255)
 currentMenu = 0
+selectedOption = 0
+#UI Stuffs
+selectionColor = (122,192,255)
+#Mouse Data
 mousex = 0
 mousey = 0
+mouseEnabled = True
+#Data Arrays
 gamePaths = []
 names = []
 images = []
 viewMode = ViewMode.Text
 currentPage = 0
+#Dirs
 baseDir = os.environ['HOME'] + "/.config/PyrotonWineManager/"
 configPath = baseDir + ".config"
 dllPath = baseDir + ".dlls"
 cachedGames = baseDir + ".cached"
+
 if not os.path.exists(baseDir):
     os.makedirs(baseDir)
 if(os.path.isfile(os.environ['HOME'] + "/Library.uud")):
@@ -59,6 +66,7 @@ window = pyglet.window.Window()
 if(os.path.isfile(configPath)):
 	with open(configPath) as configFile:
 		winetricksVer = int(configFile.readline())
+		viewMode = ViewMode[configFile.readline().split('.')[1].strip()]
 else:
 	with open(configPath,"x+") as configFile:
 		winetricksVer = str(subprocess.run("winetricks --version",shell=True,capture_output=True)).split("b'")[1].split('-')[0]
@@ -123,6 +131,9 @@ def on_mouse_motion(x, y, dx, dy):
 	global mousey
 	mousex = x
 	mousey = y
+	if(abs(dx) > 0 or abs(dy)):
+		mouseEnabled = True
+		window.set_exclusive_mouse(False)
 
 @window.event
 def on_mouse_scroll(x, y, scroll_x, scroll_y):
@@ -149,18 +160,21 @@ def on_mouse_scroll(x, y, scroll_x, scroll_y):
 		elif(scroll_y < 0):
 			selectedOption = (selectedOption + 1 + len(dlls))%len(dlls)
 	SetCurrentPage()
+
 @window.event
 def on_mouse_leave(x, y):
 	global mousex
 	global mousey
 	mousex = 0
 	mousey = 0	
+
 @window.event
 def on_mouse_press(x, y, button, modifiers):
 	if(button == mouse.LEFT):
 		on_key_press(key.ENTER,modifiers)
 	if(button == mouse.RIGHT):
 		on_key_press(key.BACKSPACE,modifiers)
+
 @window.event
 def on_key_press(symbol, modifiers):
 	global selectedGame
@@ -170,6 +184,8 @@ def on_key_press(symbol, modifiers):
 	global viewMode
 	on_mouse_leave(0,0)
 	if(symbol == key.DOWN):
+		window.set_exclusive_mouse(True)
+		mouseEnabled = False
 		if(Menus(currentMenu) == Menus.GameSelect):
 			selectedGame = (selectedGame + 1 + len(gamePaths)) % len(gamePaths)
 			GetImage()
@@ -178,6 +194,8 @@ def on_key_press(symbol, modifiers):
 		elif(Menus(currentMenu) == Menus.Winetricks):
 			selectedOption = (selectedOption + 1 + len(dlls)) % len(dlls)
 	if(symbol == key.UP):
+		window.set_exclusive_mouse(True)
+		mouseEnabled = False
 		if(Menus(currentMenu) == Menus.GameSelect):
 			selectedGame = (selectedGame - 1 + len(gamePaths)) % len(gamePaths)
 			GetImage()
@@ -221,6 +239,7 @@ def on_key_press(symbol, modifiers):
 		else:
 			viewMode = ViewMode.Tile
 	SetCurrentPage()
+
 def SetCurrentPage():
 	global currentPage
 	if(Menus(currentMenu) == Menus.GameSelect):
@@ -244,6 +263,8 @@ def SetCurrentPage():
 				
 pyglet.gl.glClearColor(.05,.15,.22,1)
 window.set_caption("Pyroton Wine Manager")
+event_loop = pyglet.app.EventLoop()
+
 @window.event
 def on_draw():
 	global selectedGame
@@ -258,7 +279,7 @@ def on_draw():
 								font_size=20,
 								x=window.width/2, y=(window.height * .5) - (x * 30),
 								anchor_x='center', anchor_y='center')
-					if(MouseOverLabel(label)):
+					if(MouseOverLabel(label) and mouseEnabled):
 						selectedGame = index
 						SetCurrentPage()
 						GetImage()	
@@ -275,7 +296,7 @@ def on_draw():
 					xOffset = x % 4
 					yPos = window.height - 80 - math.floor(x/4) * (tile.height + 10) - tile.height
 					tile.set_position(xOffset * (tile.width + 10) + 10,yPos)
-					if(MouseOverImage(tile)):
+					if(MouseOverImage(tile) and mouseEnabled):
 						selectedGame = index
 					if(selectedGame != index):
 						tile.opacity = 50
@@ -289,7 +310,7 @@ def on_draw():
 						font_size=20,
 						x=window.width/2, y=(window.height * .5) - (x * 30),
 						anchor_x='center', anchor_y='center')
-			if(MouseOverLabel(label)):
+			if(MouseOverLabel(label) and mouseEnabled):
 				selectedOption = x
 			if(selectedOption != x):
 				label.color =  (selectionColor[0],selectionColor[1],selectionColor[2],50)
@@ -302,7 +323,7 @@ def on_draw():
 						font_size=20,
 						x=window.width/2, y=(window.height * .5) - (x * 30),
 						anchor_x='center', anchor_y='center')
-			if(MouseOverLabel(label)):
+			if(MouseOverLabel(label) and mouseEnabled):
 				selectedOption = index
 				SetCurrentPage()
 			if(selectedOption != index):
@@ -317,6 +338,7 @@ def MouseOverLabel(rect):
 	if (mousey <= up and mousey >= down):
 		return True
 	return False
+
 def MouseOverImage(image):
 	global mousex
 	global mousey
@@ -327,4 +349,17 @@ def MouseOverImage(image):
 	if (mousey <= up and mousey >= down and mousex <= right and mousex >= left):
 		return True
 	return False
+
+@window.event
+def on_close():
+	configFile = open(configPath,"r")
+	lines = configFile.readlines()
+	if(len(lines) <2):
+		lines.append(str(viewMode))
+	else:
+		lines[1] = str(viewMode)
+	configFile = open(configPath,"w")
+	for x in lines:
+		configFile.write(x.strip() + "\n")
+
 pyglet.app.run()
