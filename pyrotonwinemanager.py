@@ -9,16 +9,37 @@ from pyglet.window import key
 from pyglet.window import mouse
 from enum import Enum
 from io import BytesIO
+
+class GameOptions(Enum):
+	PlayGame = 0
+	WineCFG= 1
+	WineTricks = 2
+	Terminal = 3
+	Back = 4
+optionsNN = {GameOptions.PlayGame : "Play Game",GameOptions.WineCFG : "Winecfg",GameOptions.WineTricks : "Winetricks", GameOptions.Back : "Back",GameOptions.Terminal: "Terminal"}
+
+class Menus(Enum):
+	GameSelect=0
+	PrefixManage=1
+	Winetricks=2
+
+class ViewMode(Enum):
+	Text = 0
+	Tile = 1
+
 #Global Variables
 labelsToDraw = 8
+imagesToDraw = 16
 selectedGame = 0
 selectedOption = 0
+selectionColor = (122,192,255)
 currentMenu = 0
 mousex = 0
 mousey = 0
 gamePaths = []
 names = []
 images = []
+viewMode = ViewMode.Text
 currentPage = 0
 baseDir = os.environ['HOME'] + "/.config/PyrotonWineManager/"
 configPath = baseDir + ".config"
@@ -62,20 +83,6 @@ else:
 	with open(dllPath) as f:
 		for line in f:
 			dlls.append(line.strip())
-
-class GameOptions(Enum):
-	PlayGame = 0
-	WineCFG= 1
-	WineTricks = 2
-	Terminal = 3
-	Back = 4
-optionsNN = {GameOptions.PlayGame : "Play Game",GameOptions.WineCFG : "Winecfg",GameOptions.WineTricks : "Winetricks", GameOptions.Back : "Back",GameOptions.Terminal: "Terminal"}
-
-class Menus(Enum):
-	GameSelect=0
-	PrefixManage=1
-	Winetricks=2
-
 
 def GetGameName(id):
 	for val in gameJson:
@@ -160,6 +167,8 @@ def on_key_press(symbol, modifiers):
 	global selectedOption
 	global currentMenu
 	global currentPage
+	global viewMode
+	on_mouse_leave(0,0)
 	if(symbol == key.DOWN):
 		if(Menus(currentMenu) == Menus.GameSelect):
 			selectedGame = (selectedGame + 1 + len(gamePaths)) % len(gamePaths)
@@ -206,53 +215,84 @@ def on_key_press(symbol, modifiers):
 		elif(currentMenu == Menus.PrefixManage):
 			currentMenu = Menus.GameSelect
 			currentPage = math.floor(selectedGame /labelsToDraw)
+	if(symbol == key.F12):
+		if(viewMode == ViewMode.Tile):
+			viewMode = ViewMode.Text
+		else:
+			viewMode = ViewMode.Tile
 	SetCurrentPage()
 def SetCurrentPage():
 	global currentPage
 	if(Menus(currentMenu) == Menus.GameSelect):
 		totalPages = math.ceil(len(gamePaths)/labelsToDraw)
-		if(selectedGame == (currentPage * labelsToDraw + len(gamePaths)-1) % len(gamePaths)):
-				currentPage = (currentPage - 1 + totalPages) % totalPages
-		elif(selectedGame == ((currentPage + 1) * labelsToDraw + len(gamePaths)) % len(gamePaths)):
-				currentPage = (currentPage + 1 + totalPages) % totalPages
+		if(viewMode == ViewMode.Text):
+			if(selectedGame == (currentPage * labelsToDraw + len(gamePaths)-1) % len(gamePaths)):
+					currentPage = (currentPage - 1 + totalPages) % totalPages
+			elif(selectedGame == ((currentPage + 1) * labelsToDraw + len(gamePaths)) % len(gamePaths)):
+					currentPage = (currentPage + 1 + totalPages) % totalPages
+		if(viewMode == ViewMode.Tile):
+			if(selectedGame == (currentPage * imagesToDraw + len(gamePaths)-1) % len(gamePaths)):
+					currentPage = (currentPage - 1 + imagesToDraw) % totalPages
+			elif(selectedGame == ((currentPage + 1) * imagesToDraw + len(gamePaths)) % len(gamePaths)):
+					currentPage = (currentPage + 1 + imagesToDraw) % totalPages			
 	if(Menus(currentMenu) == Menus.Winetricks):
 		totalPages = math.ceil(len(dlls)/labelsToDraw)
 		if(selectedOption == (currentPage * labelsToDraw + len(dlls)-1) % len(dlls)):
 				currentPage = (currentPage - 1 + totalPages) % totalPages
 		elif(selectedOption == ((currentPage + 1) * labelsToDraw + len(dlls)) % len(dlls)):
 				currentPage = (currentPage + 1 + totalPages) % totalPages
+				
+pyglet.gl.glClearColor(.05,.15,.22,1)
+window.set_caption("Pyroton Wine Manager")
 @window.event
 def on_draw():
 	global selectedGame
 	global selectedOption
 	window.clear()
 	if(Menus(currentMenu) == Menus.GameSelect):
-		offset = currentPage * labelsToDraw
-		for x in range(0,min(len(gamePaths),labelsToDraw )):
-			index = (offset + x + len(gamePaths)) % len(gamePaths)
-			label = pyglet.text.Label(names[index],
-						font_size=20,
-						x=window.width/2, y=(window.height * .5) - (x * 30),
-						anchor_x='center', anchor_y='center')
-			if(MouseOver(label)):
-				selectedGame = index
-				SetCurrentPage()
-				GetImage()			
-			if(selectedGame == index):
-				label.color = (0,255,0,255)
-			label.draw()
-	image.set_position(window.width/2 - image.width/2,window.height - image.height)
-	image.draw()
+			if(viewMode == ViewMode.Text):
+				offset = currentPage * labelsToDraw
+				for x in range(0,min(len(gamePaths),labelsToDraw )):
+					index = (offset + x + len(gamePaths)) % len(gamePaths)
+					label = pyglet.text.Label(names[index],
+								font_size=20,
+								x=window.width/2, y=(window.height * .5) - (x * 30),
+								anchor_x='center', anchor_y='center')
+					if(MouseOverLabel(label)):
+						selectedGame = index
+						SetCurrentPage()
+						GetImage()	
+					if(selectedGame != index):
+						label.color =  (selectionColor[0],selectionColor[1],selectionColor[2],50)
+					label.draw()		
+			elif(viewMode == ViewMode.Tile):
+				offset = currentPage * imagesToDraw
+				for x in range(0,min(len(gamePaths),imagesToDraw)):
+					index = (offset + x + len(gamePaths)) % len(gamePaths)
+					thumbnail = images[index]
+					tile = pyglet.sprite.Sprite(pyglet.image.load('thumbnail.png',file=thumbnail))
+					tile.scale = .32
+					xOffset = x % 4
+					yPos = window.height - 80 - math.floor(x/4) * (tile.height + 10) - tile.height
+					tile.set_position(xOffset * (tile.width + 10) + 10,yPos)
+					if(MouseOverImage(tile)):
+						selectedGame = index
+					if(selectedGame != index):
+						tile.opacity = 50
+					tile.draw()
+	if(viewMode != ViewMode.Tile or Menus(currentMenu) != Menus.GameSelect):
+		image.set_position(window.width/2 - image.width/2,window.height - image.height)
+		image.draw()
 	if(Menus(currentMenu) == Menus.PrefixManage):
 		for x in range(0,len(GameOptions)):
 			label = pyglet.text.Label(optionsNN[GameOptions(x)],
 						font_size=20,
 						x=window.width/2, y=(window.height * .5) - (x * 30),
 						anchor_x='center', anchor_y='center')
-			if(MouseOver(label)):
+			if(MouseOverLabel(label)):
 				selectedOption = x
-			if(selectedOption == x):
-				label.color = (0,255,0,255)
+			if(selectedOption != x):
+				label.color =  (selectionColor[0],selectionColor[1],selectionColor[2],50)
 			label.draw()
 	if(Menus(currentMenu) == Menus.Winetricks):
 		offset = currentPage * labelsToDraw
@@ -262,19 +302,29 @@ def on_draw():
 						font_size=20,
 						x=window.width/2, y=(window.height * .5) - (x * 30),
 						anchor_x='center', anchor_y='center')
-			if(MouseOver(label)):
+			if(MouseOverLabel(label)):
 				selectedOption = index
 				SetCurrentPage()
-			if(selectedOption == index):
-				label.color = (0,255,0,255)
+			if(selectedOption != index):
+				label.color =  (selectionColor[0],selectionColor[1],selectionColor[2],50)
 			label.draw()
 
-def MouseOver(rect):
+def MouseOverLabel(rect):
 	global mousex
 	global mousey
 	up = rect.y + rect.font_size/2
 	down = rect.y - rect.font_size/2
 	if (mousey <= up and mousey >= down):
+		return True
+	return False
+def MouseOverImage(image):
+	global mousex
+	global mousey
+	up = image.y + image.height
+	down = image.y
+	left = image.x
+	right = image.x + image.width
+	if (mousey <= up and mousey >= down and mousex <= right and mousex >= left):
 		return True
 	return False
 pyglet.app.run()
