@@ -14,10 +14,10 @@ such as `/media/$USER/SteamLibrary`
 5. Then
 `python3 pyrotonwinemanager.py`
 
-Left click and Enter Selects current option.
+Left click - Selects current option.
 
-Scrollwheel, Up, and Down scrolls menus.
+Scrollwheel - Scrolls menus.
 
-Right Click,Left,Right, and Backspace go to prior menu.
+Right Click - Goes to prior menu.
 
-F12 Changes between tile and text mode.
+F12 - Changes between tile and text mode.
