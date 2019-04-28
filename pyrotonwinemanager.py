@@ -133,7 +133,7 @@ def GetGameInfo():
 		for subDir in os.listdir(path + "/steamapps/compatdata"):
 			if(subDir != "pfx"):
 				if(path + "/steamapps/compatdata/" + subDir not in gamePaths):
-					gamePaths.append(path + "/steamapps/compatdata/" + subDir)
+					gamePaths.append(path + "/steamapps/compatdata/" + subDir + "/pfx")
 					GetGameName(int(subDir))
 				imagePath = baseDir + subDir + ".jpg"
 				if(subDir + ".jpg" not in os.listdir(baseDir)):
