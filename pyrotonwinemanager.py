@@ -331,7 +331,7 @@ def on_mouse_press(x, y, button, modifiers):
 		elif(Menus(currentMenu) == Menus.PrefixManage):
 			if(GameOptions(selectedOption) == GameOptions.PlayGame):
 				splitName = gamePaths[selectedGame].split('/')
-				subprocess.run(["steam", "steam://run/"+ splitName[len(splitName)-1]])
+				subprocess.run(["steam", "steam://run/"+ splitName[len(splitName)-2]])
 			elif(GameOptions(selectedOption) == GameOptions.WineCFG):
 				os.environ['WINEPREFIX'] = gamePaths[selectedGame]
 				subprocess.run(["winecfg"])
