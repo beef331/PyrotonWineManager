@@ -129,7 +129,7 @@ def GetGameName(id):
 #Get steam paths and images from pfx names
 def GetGameInfo():
 	for path in steamPaths:
-		path = path.replace("\n","")
+		path = path.replace("\n","").strip()
 		for subDir in os.listdir(path + "/steamapps/compatdata"):
 			if(subDir != "pfx"):
 				if(path + "/steamapps/compatdata/" + subDir not in gamePaths):
