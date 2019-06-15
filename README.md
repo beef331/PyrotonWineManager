@@ -12,7 +12,7 @@ Or in terminal
 4. In your $HOME folder create a Library.uud file. Each line of this file is a steam library directory.
 such as `/media/$USER/SteamLibrary`
 5. Then
-`python3 pyrotonwinemanager.py`
+`python3.7 pyrotonwinemanager.py`
 
 Left click - Selects current option.
 
