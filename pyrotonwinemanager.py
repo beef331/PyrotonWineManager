@@ -14,19 +14,17 @@ from io import BytesIO
 class GameOptions(Enum):
     PlayGame = 0
     WineCFG = 1
-    WineTricks = 2
-    Terminal = 3
-    Back = 4
+    Terminal = 2
+    Back = 3
 
 
 optionsNN = {GameOptions.PlayGame: "Play Game", GameOptions.WineCFG: "Winecfg",
-             GameOptions.WineTricks: "Winetricks", GameOptions.Back: "Back", GameOptions.Terminal: "Terminal"}
+             GameOptions.Back: "Back", GameOptions.Terminal: "Terminal"}
 
 
 class Menus(Enum):
     GameSelect = 0
     PrefixManage = 1
-    Winetricks = 2
 
 
 # Global Variables
@@ -48,7 +46,6 @@ onScroll = False
 gamePaths = []
 sprites = []
 gameLabels = []
-dllsLabels = []
 optionLabels = []
 currentPage = 0
 # Dirs
@@ -60,8 +57,6 @@ cachedGames = baseDir + ".cached"
 
 def Init():
     LoadLibraryFile()
-    LoadConfig()
-    LoadDlls()
     GetGameInfo()
 
     for x in range(0, len(optionsNN)):
@@ -82,47 +77,6 @@ def LoadLibraryFile():
               os.environ['HOME'] + "/Library.uud a directory")
         exit()
 
-
-def LoadConfig():
-    global currentWineTricksVer
-    global storedWinetricksVer
-    if(os.path.isfile(configPath)):
-        with open(configPath) as configFile:
-            storedWinetricksVer = int(configFile.readline())
-    else:
-        with open(configPath, "x+") as configFile:
-            storedWinetricksVer = str(subprocess.run(
-                "winetricks --version", shell=True, capture_output=True)).split("b'")[1].split('-')[0]
-            configFile.write(storedWinetricksVer)
-
-    currentWineTricksVer = int(str(subprocess.run(
-        "winetricks --version", shell=True, capture_output=True)).split("b'")[1].split('-')[0])
-
-
-def LoadDlls():
-    global dlls
-    if(not os.path.isfile(dllPath) or currentWineTricksVer != storedWinetricksVer):
-        # Gets DLL lists
-        dllsList = str(subprocess.run("winetricks dlls list",
-                                      shell=True, capture_output=True))
-        dlls = dllsList.split(']')
-        del dlls[-1]
-        dlls[0] = "adobeair"
-        with open(dllPath, "a") as dllFile:
-            for x in range(0, len(dlls)):
-                if(x > 0):
-                    newString = dlls[x].split(' ')[0]
-                    dlls[x] = newString[2:]
-                dllFile.write(dlls[x] + "\n")
-    else:
-        dlls = []
-        with open(dllPath) as f:
-            for line in f:
-                dlls.append(line.strip())
-                dllsLabels.append(pyglet.text.Label(line.strip(),
-                                                    font_size=fontHeight,
-                                                    x=0, y=0,
-                                                    anchor_x='center', anchor_y='center'))
 
 # Gets Game Name from ID
 
@@ -210,7 +164,7 @@ def on_draw():
             tile = sprites[index]
             tile.scale = .32
             xOffset = x % 4
-            yPos = window.height - 80 - math.floor(x/4) * (tile.height + 10) - tile.height + (
+            yPos = window.height - math.floor(x/4) * (tile.height + 10) - tile.height + (
                 (1-(scroll.y/(window.height-scroll.height))) * (len(gamePaths)/4)) * tile.height
             tile.set_position(xOffset * (tile.width + 10) + 10, yPos)
             if(MouseOverImage(tile)):
@@ -240,21 +194,6 @@ def on_draw():
             if(MouseOverLabel(label)):
                 selectedOption = x
             if(selectedOption != x):
-                label.color = (
-                    selectionColor[0], selectionColor[1], selectionColor[2], 50)
-            else:
-                label.color = (255, 255, 255, 255)
-            label.draw()
-    if(Menus(currentMenu) == Menus.Winetricks):
-        offset = currentPage * labelsToDraw
-        for x in range(0, min(len(dlls), labelsToDraw)):
-            index = (offset + x + len(dlls)) % len(dlls)
-            label = dllsLabels[index]
-            label.x = window.width/2
-            label.y = labelStartHeight - (x * 30)
-            if(MouseOverLabel(label)):
-                selectedOption = index
-            if(selectedOption != index):
                 label.color = (
                     selectionColor[0], selectionColor[1], selectionColor[2], 50)
             else:
@@ -308,14 +247,11 @@ def on_mouse_scroll(x, y, scroll_x, scroll_y):
     global currentPage
     global mousex
     global mousey
-    if(Menus(currentMenu) == Menus.PrefixManage):
-        totalPages = math.ceil(len(optionLabels)/float(labelsToDraw))
-    if(Menus(currentMenu) == Menus.Winetricks):
-        totalPages = math.ceil(len(dllsLabels)/float(labelsToDraw))
-    if(scroll_y > 0):
-        currentPage = (currentPage - 1 % totalPages) % totalPages
-    elif(scroll_y < 0):
-        currentPage = (currentPage + 1 % totalPages) % totalPages
+    scroll.y -= scroll_y * 10
+    if(scroll.y < 0):
+        scroll.y = 0
+    if(scroll.y > window.height-scroll.height):
+        scroll.y = window.height-scroll.height
     DrawImage()
 
 
@@ -368,22 +304,13 @@ def on_mouse_press(x, y, button, modifiers):
             elif(GameOptions(selectedOption) == GameOptions.WineCFG):
                 os.environ['WINEPREFIX'] = gamePaths[selectedGame]
                 subprocess.run(["winecfg"])
-            elif(GameOptions(selectedOption) == GameOptions.WineTricks):
-                selectedOption = 0
-                currentMenu = Menus.Winetricks
-                currentPage = 0
             elif(GameOptions(selectedOption) == GameOptions.Back):
                 currentMenu = 0
             elif(GameOptions(selectedOption) == GameOptions.Terminal):
                 os.environ['WINEPREFIX'] = gamePaths[selectedGame]
                 subprocess.Popen([os.environ['SHELL']])
-        elif(Menus(currentMenu) == Menus.Winetricks and selectedOption >= 0 and selectedOption < len(dllsLabels)):
-            os.environ['WINEPREFIX'] = gamePaths[selectedGame]
-            subprocess.run(["winetricks", "-q", dlls[selectedOption]])
     if(button == mouse.RIGHT):
-        if(currentMenu == Menus.Winetricks):
-            currentMenu = Menus.PrefixManage
-        elif(currentMenu == Menus.PrefixManage):
+        if(currentMenu == Menus.PrefixManage):
             currentMenu = Menus.GameSelect
             currentPage = math.floor(selectedGame/labelsToDraw)
 
